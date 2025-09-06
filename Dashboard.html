@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - رحلة حفظ القرآن</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap' );
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #0c4a6e;
+            margin: 0;
+        }
+        .header #userName {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        #logoutButton {
+            background: none;
+            border: 1px solid #ef4444;
+            color: #ef4444;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        #logoutButton:hover {
+            background-color: #ef4444;
+            color: white;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background-color: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            color: #374151;
+            font-size: 1em;
+        }
+        .stat-card p {
+            margin: 0;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #0ea5e9;
+        }
+        .main-action {
+            text-align: center;
+            padding: 30px;
+            background-color: #e0f2fe;
+            border-radius: 8px;
+        }
+        .main-action h2 {
+            margin: 0 0 10px 0;
+            color: #0c4a6e;
+        }
+        .main-action p {
+            margin: 0 0 20px 0;
+            color: #374151;
+        }
+        #startPathButton {
+            padding: 15px 30px;
+            background-color: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #startPathButton:hover {
+            background-color: #15803d;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            color: #0c4a6e;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading" class="loading-overlay">
+        <p>جاري تحميل بياناتك...</p>
+    </div>
+
+    <div class="container" style="display: none;">
+        <div class="header">
+            <div>
+                <h1>أهلاً بعودتك،</h1>
+                <span id="userName"></span>
+            </div>
+            <button id="logoutButton">تسجيل الخروج</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>المستوى</h3>
+                <p id="level">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>نقاط الخبرة (XP)</h3>
+                <p id="xp">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>الألماس</h3>
+                <p id="diamonds">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>المحاولات المجانية</h3>
+                <p id="attempts">--</p>
+            </div>
+        </div>
+
+        <div class="main-action">
+            <h2 id="pathTitle"></h2>
+            <p>هل أنت مستعد لمواصلة رحلتك؟</p>
+            <button id="startPathButton">ابدأ المرحلة</button>
+        </div>
+    </div>
+
+    <script>
+        // !! هام جداً: استبدل هذا الرابط برابط الـ Web App الذي نسخته
+        const API_URL = "https://script.google.com/macros/s/AKfycbwzfsvtrh-aPU_E6QWuEBQ7b944m4a3L70OdaxaBksJGDGSFW_01afJaZYMdpdo0uLgZA/exec";
+
+        const loadingDiv = document.getElementById('loading');
+        const containerDiv = document.querySelector('.container');
+
+        // دالة للتحقق من تسجيل الدخول وجلب البيانات
+        function loadDashboard() {
+            const token = localStorage.getItem('quranAppToken');
+            const userName = localStorage.getItem('quranAppUserName');
+
+            // 1. التحقق من وجود التوكن
+            if (!token) {
+                // إذا لم يكن المستخدم مسجلاً دخوله، انقله إلى صفحة الدخول
+                window.location.href = 'Login.html';
+                return;
+            }
+
+            // عرض اسم المستخدم فوراً لتحسين التجربة
+            document.getElementById('userName').textContent = userName;
+
+            // 2. جلب بيانات المستخدم من الـ API
+            // نستخدم طلب GET ونمرر البيانات كـ query parameters
+            fetch(`${API_URL}?action=getUserData&token=${token}`)
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // إذا نجح جلب البيانات، قم بتعبئة الصفحة
+                        const progress = result.data.progress;
+                        document.getElementById('level').textContent = progress.Level;
+                        document.getElementById('xp').textContent = progress.XP;
+                        document.getElementById('diamonds').textContent = progress.Diamonds;
+                        document.getElementById('attempts').textContent = progress.FreeAttempts;
+                        
+                        const pathTitle = `المسار ${progress.CurrentPath} - المرحلة ${progress.CurrentStage}`;
+                        document.getElementById('pathTitle').textContent = pathTitle;
+
+                        // حفظ بيانات المسار الحالي للانتقال لصفحة الاختبار
+                        localStorage.setItem('currentPath', progress.CurrentPath);
+                        localStorage.setItem('currentStage', progress.CurrentStage);
+
+                        // إخفاء شاشة التحميل وإظهار المحتوى
+                        loadingDiv.style.display = 'none';
+                        containerDiv.style.display = 'block';
+                    } else {
+                        // إذا كان هناك خطأ (مثل انتهاء صلاحية التوكن)
+                        alert('حدث خطأ: ' + result.error);
+                        // امسح البيانات القديمة وانقله لصفحة الدخول
+                        localStorage.removeItem('quranAppToken');
+                        localStorage.removeItem('quranAppUserName');
+                        window.location.href = 'Login.html';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    loadingDiv.innerHTML = '<p>❌ فشل الاتصال بالخادم. يرجى المحاولة مرة أخرى.</p>';
+                });
+        }
+
+        // إضافة وظيفة لزر تسجيل الخروج
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.removeItem('quranAppToken');
+            localStorage.removeItem('quranAppUserName');
+            localStorage.removeItem('currentPath');
+            localStorage.removeItem('currentStage');
+            window.location.href = 'Login.html';
+        });
+
+        // إضافة وظيفة لزر بدء المسار
+        document.getElementById('startPathButton').addEventListener('click', () => {
+            // الانتقال إلى صفحة الاختبار
+            window.location.href = 'Quiz.html';
+        });
+
+        // استدعاء الدالة الرئيسية عند تحميل الصفحة
+        window.onload = loadDashboard;
+    </script>
+</body>
+</html>

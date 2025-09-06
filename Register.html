@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إنشاء حساب جديد - رحلة حفظ القرآن</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap' );
+        
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #0c4a6e; /* أزرق غامق */
+            margin-bottom: 10px;
+        }
+        p {
+            color: #555;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #0ea5e9; /* أزرق سماوي */
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0284c7; /* أزرق أغمق */
+        }
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .status-success {
+            color: #16a34a; /* أخضر */
+        }
+        .status-error {
+            color: #dc2626; /* أحمر */
+        }
+        .switch-page {
+            margin-top: 20px;
+            color: #555;
+        }
+        .switch-page a {
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>حساب جديد</h1>
+        <p>انضم إلينا في رحلة حفظ وتدبر القرآن الكريم</p>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="fullName">الاسم الثلاثي</label>
+                <input type="text" id="fullName" name="fullName" required>
+            </div>
+            <div class="form-group">
+                <label for="email">البريد الإلكتروني</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <button type="submit" id="submitButton">إنشاء الحساب</button>
+        </form>
+        
+        <div id="status"></div>
+        
+        <div class="switch-page">
+            لديك حساب بالفعل؟ <a href="Login.html">سجل الدخول</a>
+        </div>
+    </div>
+
+    <script>
+        // !! هام جداً: استبدل هذا الرابط برابط الـ Web App الذي نسخته
+        const API_URL = "https://script.google.com/macros/s/AKfycbwzfsvtrh-aPU_E6QWuEBQ7b944m4a3L70OdaxaBksJGDGSFW_01afJaZYMdpdo0uLgZA/exec"; 
+
+        const registerForm = document.getElementById('registerForm');
+        const submitButton = document.getElementById('submitButton');
+        const statusDiv = document.getElementById('status');
+
+        registerForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            submitButton.disabled = true;
+            statusDiv.textContent = 'جاري إنشاء الحساب...';
+            statusDiv.className = '';
+
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value
+            };
+
+            fetch(API_URL, {
+                method: 'POST',
+                // Apps Script يتطلب هذا الهيدر عند إرسال JSON
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({
+                    action: 'registerUser',
+                    data: formData
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    statusDiv.textContent = result.message;
+                    statusDiv.className = 'status-success';
+                    registerForm.reset(); // مسح الحقول بعد النجاح
+                } else {
+                    // نعرض رسالة الخطأ التي تأتي من الخادم
+                    statusDiv.textContent = '❌ ' + result.error;
+                    statusDiv.className = 'status-error';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                statusDiv.textContent = '❌ حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.';
+                statusDiv.className = 'status-error';
+            })
+            .finally(() => {
+                // إعادة تفعيل الزر بعد انتهاء العملية
+                submitButton.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>
