@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل الدخول - رحلة حفظ القرآن</title>
-    <!-- استخدام نفس التصميم للحفاظ على التناسق -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap' );
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap'  );
         
         body {
             font-family: 'Cairo', sans-serif;
@@ -116,10 +115,10 @@
     </div>
 
     <script>
-        // !! هام جداً: استبدل هذا الرابط برابط الـ Web App الذي نسخته
-        const API_URL = "https://script.google.com/macros/s/AKfycbzlhlP0lwDGck2YuWjXDLUSKq0ph9OUibCwZOV_G9nRcrpAWQ0hvzOUFrzueCTs5VVgIw/exec";
+        // !! هام جداً: تأكد من أن هذا الرابط هو رابط النشر الصحيح والجديد
+        const API_URL = "https://script.google.com/macros/s/AKfycbzonBJIR5plA8ez_EwDDame-uOX-oTBWD97NZXtpMRqdvumm7nuBuBJE4l9T3ZTD5D-Dw/exec";
 
-        const loginForm = document.getElementById('loginForm');
+        const loginForm = document.getElementById('loginForm' );
         const submitButton = document.getElementById('submitButton');
         const statusDiv = document.getElementById('status');
 
@@ -134,50 +133,57 @@
                 password: document.getElementById('password').value
             };
 
+            console.log("إرسال طلب POST إلى:", API_URL);
+
             fetch(API_URL, {
                 method: 'POST',
-              //  headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
                     action: 'doLogin',
                     data: formData
                 })
             })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    // نجح تسجيل الدخول
-                    statusDiv.textContent = 'تم التحقق بنجاح! جاري توجيهك...';
-                    
-                    // حفظ التوكن واسم المستخدم في ذاكرة المتصفح
-                    localStorage.setItem('quranAppToken', result.token);
-                    localStorage.setItem('quranAppUserName', result.fullName);
-                    
-                    // الانتقال إلى لوحة التحكم بعد ثانية واحدة
-                    setTimeout(() => {
-                        window.location.href = 'Dashboard.html';
-                    }, 1000);
+            .then(response => {
+                console.log("تم استلام استجابة من الخادم. الحالة:", response.status, response.statusText);
+                console.log("هل الاستجابة OK؟", response.ok);
+                // سنقوم بتحويل الاستجابة إلى نص أولاً لنرى ما بداخلها
+                return response.text(); 
+            })
+            .then(text => {
+                console.log("النص الخام المستلم من الخادم:", text);
+                
+                // إذا كان النص فارغًا، فهذه مشكلة
+                if (!text) {
+                    throw new Error("الخادم أعاد استجابة فارغة.");
+                }
 
-                } else {
-                    statusDiv.textContent = '❌ ' + result.error;
+                // الآن، نحاول تحويل النص إلى JSON داخل كتلة try-catch
+                try {
+                    const result = JSON.parse(text);
+                    
+                    if (result.success) {
+                        statusDiv.textContent = 'تم التحقق بنجاح! جاري توجيهك...';
+                        localStorage.setItem('quranAppToken', result.token);
+                        localStorage.setItem('quranAppUserName', result.fullName);
+                        setTimeout(() => {
+                            window.location.href = 'Dashboard.html';
+                        }, 1000);
+                    } else {
+                        statusDiv.textContent = '❌ ' + (result.error || 'خطأ غير معروف من الخادم.');
+                        submitButton.disabled = false;
+                    }
+
+                } catch (e) {
+                    console.error("فشل تحليل JSON:", e);
+                    statusDiv.textContent = "❌ حدث خطأ غير متوقع في استجابة الخادم. تحقق من Console.";
+                    submitButton.disabled = false;
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                statusDiv.textContent = '❌ حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.';
-            })
-            .finally(() => {
-                // لا نقم بإعادة تفعيل الزر فورًا إذا كان سينتقل لصفحة أخرى
-                if (!localStorage.getItem('quranAppToken')) {
-                    submitButton.disabled = false;
-                }
+                console.error('Error (catch block):', error);
+                statusDiv.textContent = '❌ فشل الاتصال بالخادم. تحقق من Console.';
+                submitButton.disabled = false;
             });
         });
     </script>
 </body>
 </html>
-
-
-
-
-
-
